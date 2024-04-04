@@ -23,13 +23,34 @@ class TodoList extends StatefulWidget {
 }
 
 class _TodoListState extends State<TodoList> {
-  final List<String> _todoItems = [];
+  final List<TodoItem> _todoItems = [];
 
   void _addTodoItem(String task) {
     if (task.isNotEmpty) {
       setState(() {
-        _todoItems.add(task);
+        _todoItems.add(TodoItem(task: task));
       });
+    }
+  }
+
+  void _editTodoItemDateAndTime(int index) async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _todoItems[index].dateTime ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (pickedDate != null) {
+      TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: _todoItems[index].timeOfDay ?? TimeOfDay.now(),
+      );
+      if (pickedTime != null) {
+        setState(() {
+          _todoItems[index].dateTime = pickedDate;
+          _todoItems[index].timeOfDay = pickedTime;
+        });
+      }
     }
   }
 
@@ -39,21 +60,32 @@ class _TodoListState extends State<TodoList> {
       child: ListView.builder(
         itemCount: _todoItems.length,
         itemBuilder: (context, index) {
-          return _buildTodoItem(_todoItems[index], index);
+          return GestureDetector(
+            onTap: () {
+              _editTodoItemDateAndTime(index);
+            },
+            child: _buildTodoItem(_todoItems[index], index),
+          );
         },
       ),
     );
   }
 
-  Widget _buildTodoItem(String title, int index) {
+  Widget _buildTodoItem(TodoItem todoItem, int index) {
     return Card(
       margin: EdgeInsets.all(8.0),
       elevation: 4.0,
       child: ListTile(
         leading: Icon(Icons.check_box_outline_blank),
         title: Text(
-          title,
+          todoItem.task,
           style: TextStyle(fontSize: 18.0),
+        ),
+        subtitle: Text(
+          todoItem.dateTime != null && todoItem.timeOfDay != null
+              ? '${todoItem.dateTime!.toString().split(' ')[0]} ${todoItem.timeOfDay!.format(context)}'
+              : 'Tap to set date and time',
+          style: TextStyle(fontSize: 14.0),
         ),
         trailing: IconButton(
           icon: Icon(Icons.delete, color: Colors.red),
@@ -85,7 +117,7 @@ class _TodoListState extends State<TodoList> {
       ),
       body: _buildTodoList(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _pushAddTodoScreen(),
+        onPressed: () => _pushAddTodoScreen(context),
         tooltip: 'Add task',
         child: Icon(Icons.add),
         elevation: 4.0,
@@ -93,7 +125,7 @@ class _TodoListState extends State<TodoList> {
     );
   }
 
-  void _pushAddTodoScreen() {
+  void _pushAddTodoScreen(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -115,4 +147,16 @@ class _TodoListState extends State<TodoList> {
       },
     );
   }
+}
+
+class TodoItem {
+  String task;
+  DateTime? dateTime;
+  TimeOfDay? timeOfDay;
+
+  TodoItem({
+    required this.task,
+    this.dateTime,
+    this.timeOfDay,
+  });
 }
